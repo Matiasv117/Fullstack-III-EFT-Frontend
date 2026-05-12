@@ -7,6 +7,10 @@ import Optimizacion from './componentes/Optimizacion'
 import parguelas from './assets/parguelas.jpg'
 import { obtenerResumenPortal } from './api/portalApi'
 
+/**
+ * Componente principal de la aplicación
+ * Usa el Facade para obtener datos del portal y gestionar navegación
+ */
 function App() {
   const [seccionActiva, setSeccionActiva] = useState('pacientes')
   const [resumenPortal, setResumenPortal] = useState(null)

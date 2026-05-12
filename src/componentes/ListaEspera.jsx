@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useListaEspera } from '../hooks/useListaEspera';
+import { useListaEsperaFacade } from '../facade/appFacade';
+import { commonStyles, colorMap } from '../styles/commonStyles';
 
 function ListaEsperaView({
   listaEspera,
@@ -8,7 +9,7 @@ function ListaEsperaView({
   error,
   eliminarDeListaEspera,
   actualizarEstado,
-  recargarListaEspera,
+  cargarListaEspera,
 }) {
   const [filtroGravedad, setFiltroGravedad] = useState('TODOS');
   const [filtroEstado, setFiltroEstado] = useState('TODOS');
@@ -23,58 +24,42 @@ function ListaEsperaView({
     return true;
   });
 
-  const gravedadColor = (gravedad) => {
-    const mapa = {
-      ALTA: '#e74c3c',
-      MEDIA: '#f39c12',
-      BAJA: '#27ae60',
-      NORMAL: '#3498db',
-    };
-    return mapa[gravedad] || '#95a5a6';
-  };
-
-  const estadoColor = (estado) => {
-    const mapa = {
-      PENDIENTE: '#e74c3c',
-      ATENDIDO: '#27ae60',
-      CANCELADO: '#95a5a6',
-    };
-    return mapa[estado] || '#3498db';
-  };
+  const getGravedadColor = (gravedad) => colorMap.gravedad[gravedad] || '#95a5a6';
+  const getEstadoColor = (estado) => colorMap.estado[estado] || '#3498db';
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
-        <h2 style={styles.title}>Lista de Espera</h2>
-        <p style={styles.subtitle}>
+    <div style={commonStyles.container}>
+      <header style={commonStyles.header}>
+        <h2 style={commonStyles.title}>Lista de Espera</h2>
+        <p style={commonStyles.subtitle}>
           Monitorea y gestiona los pacientes que esperan atención médica.
         </p>
       </header>
 
-      <section style={styles.panel} aria-live="polite">
-        <div style={styles.toolbar}>
-          <h3 style={styles.sectionTitle}>Pacientes en lista de espera</h3>
+      <section style={commonStyles.panel} aria-live="polite">
+        <div style={commonStyles.toolbar}>
+          <h3 style={commonStyles.sectionTitle}>Pacientes en lista de espera</h3>
           <button
             type="button"
-            style={{ ...styles.button, ...styles.buttonSecondary }}
-            onClick={recargarListaEspera}
+            style={{ ...commonStyles.button, ...commonStyles.buttonSecondary }}
+            onClick={cargarListaEspera}
             disabled={cargando}
           >
             {cargando ? 'Actualizando…' : 'Actualizar'}
           </button>
         </div>
 
-        <div style={styles.feedback}>
-          {mensaje ? <div style={{ ...styles.alert, ...styles.alertSuccess }}>{mensaje}</div> : null}
-          {error ? <div style={{ ...styles.alert, ...styles.alertError }}>{error}</div> : null}
+        <div style={commonStyles.feedback}>
+          {mensaje ? <div style={{ ...commonStyles.alert, ...commonStyles.alertSuccess }}>{mensaje}</div> : null}
+          {error ? <div style={{ ...commonStyles.alert, ...commonStyles.alertError }}>{error}</div> : null}
         </div>
 
         {/* Filtros */}
-        <div style={styles.filterSection}>
-          <div style={styles.filterGroup}>
-            <label style={styles.label}>Gravedad</label>
+        <div style={commonStyles.filterSection}>
+          <div style={commonStyles.filterGroup}>
+            <label style={commonStyles.label}>Gravedad</label>
             <select
-              style={styles.input}
+              style={commonStyles.input}
               value={filtroGravedad}
               onChange={(e) => setFiltroGravedad(e.target.value)}
             >
@@ -85,10 +70,10 @@ function ListaEsperaView({
               <option value="NORMAL">Normal</option>
             </select>
           </div>
-          <div style={styles.filterGroup}>
-            <label style={styles.label}>Estado</label>
+          <div style={commonStyles.filterGroup}>
+            <label style={commonStyles.label}>Estado</label>
             <select
-              style={styles.input}
+              style={commonStyles.input}
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
             >
@@ -98,8 +83,8 @@ function ListaEsperaView({
               <option value="CANCELADO">Cancelado</option>
             </select>
           </div>
-          <div style={{ ...styles.filterGroup, display: 'flex', alignItems: 'flex-end' }}>
-            <span style={styles.statsText}>
+          <div style={{ ...commonStyles.filterGroup, display: 'flex', alignItems: 'flex-end' }}>
+            <span style={commonStyles.statsText}>
               Mostrando: <strong>{listaFiltrada.length}</strong> de{' '}
               <strong>{listaEspera.length}</strong>
             </span>
@@ -107,32 +92,32 @@ function ListaEsperaView({
         </div>
 
         {listaFiltrada.length === 0 ? (
-          <p style={styles.emptyState}>No hay pacientes en la lista de espera con esos filtros.</p>
+          <p style={commonStyles.emptyState}>No hay pacientes en la lista de espera con esos filtros.</p>
         ) : (
-          <ul style={styles.list}>
+          <ul style={commonStyles.list}>
             {listaFiltrada.map((item) => (
-              <li key={item.id} style={styles.listItem}>
-                <div style={styles.listDetails}>
-                  <div style={styles.listHeader}>
+              <li key={item.id} style={commonStyles.listItem}>
+                <div style={commonStyles.listDetails}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                     <strong>Paciente ID: {item.pacienteId ?? 'N/A'}</strong>
-                    <span style={{ ...styles.badge, background: gravedadColor(item.gravedad) }}>
+                    <span style={{ ...commonStyles.badge, background: getGravedadColor(item.gravedad) }}>
                       {item.gravedad || 'NORMAL'}
                     </span>
-                    <span style={{ ...styles.badge, background: estadoColor(item.estado) }}>
+                    <span style={{ ...commonStyles.badge, background: getEstadoColor(item.estado) }}>
                       {item.estado || 'PENDIENTE'}
                     </span>
                   </div>
-                  <span style={styles.meta}>
+                  <span style={commonStyles.meta}>
                     Interconsulta: {item.interconsulta || 'Sin especificar'}
                   </span>
-                  <span style={styles.meta}>ID Registro: {item.id}</span>
+                  <span style={commonStyles.meta}>ID Registro: {item.id}</span>
                 </div>
 
-                <div style={styles.actions}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <select
                     style={{
-                      ...styles.button,
-                      ...styles.buttonSecondary,
+                      ...commonStyles.button,
+                      ...commonStyles.buttonSecondary,
                       padding: '0.6rem 0.8rem',
                       cursor: 'pointer',
                     }}
@@ -152,9 +137,8 @@ function ListaEsperaView({
                   <button
                     type="button"
                     style={{
-                      ...styles.button,
-                      background: '#e74c3c',
-                      color: '#fff',
+                      ...commonStyles.button,
+                      ...commonStyles.buttonDanger,
                     }}
                     onClick={() => {
                       if (window.confirm('¿Estás seguro de que deseas eliminar este registro?')) {
@@ -176,183 +160,20 @@ function ListaEsperaView({
 }
 
 function ListaEspera() {
-  const {
-    listaEspera,
-    cargando,
-    mensaje,
-    error,
-    cargarListaEspera,
-    eliminarDeListaEspera,
-    actualizarEstado,
-  } = useListaEspera();
+  const listaEsperaFacade = useListaEsperaFacade();
 
   return (
     <ListaEsperaView
-      listaEspera={listaEspera}
-      cargando={cargando}
-      mensaje={mensaje}
-      error={error}
-      eliminarDeListaEspera={eliminarDeListaEspera}
-      actualizarEstado={actualizarEstado}
-      recargarListaEspera={cargarListaEspera}
+      listaEspera={listaEsperaFacade.listaEspera}
+      cargando={listaEsperaFacade.cargando}
+      mensaje={listaEsperaFacade.mensaje}
+      error={listaEsperaFacade.error}
+      eliminarDeListaEspera={listaEsperaFacade.eliminarDeListaEspera}
+      actualizarEstado={listaEsperaFacade.actualizarEstado}
+      cargarListaEspera={listaEsperaFacade.cargarListaEspera}
     />
   );
 }
-
-const styles = {
-  container: {
-    display: 'grid',
-    gap: '1.5rem',
-  },
-  header: {
-    display: 'grid',
-    gap: '0.5rem',
-  },
-  title: {
-    fontSize: '1.9rem',
-    color: '#0d4f5c',
-  },
-  subtitle: {
-    color: '#4f6771',
-    lineHeight: 1.5,
-  },
-  panel: {
-    padding: '1.25rem',
-    borderRadius: '16px',
-    border: '1px solid #dce8ea',
-    background: '#fbfefe',
-    boxShadow: '0 10px 25px rgba(16, 61, 70, 0.05)',
-  },
-  sectionTitle: {
-    fontSize: '1.2rem',
-    color: '#116a7b',
-    marginBottom: '1rem',
-  },
-  toolbar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '1rem',
-    flexWrap: 'wrap',
-    marginBottom: '1rem',
-  },
-  button: {
-    border: 'none',
-    borderRadius: '10px',
-    padding: '0.85rem 1rem',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  buttonPrimary: {
-    background: 'linear-gradient(135deg, #116a7b, #4db6ac)',
-    color: '#fff',
-  },
-  buttonSecondary: {
-    background: '#e5f2f1',
-    color: '#0d4f5c',
-  },
-  feedback: {
-    display: 'grid',
-    gap: '0.75rem',
-    marginBottom: '1rem',
-  },
-  alert: {
-    padding: '0.9rem 1rem',
-    borderRadius: '12px',
-    fontWeight: 600,
-  },
-  alertSuccess: {
-    background: '#e6f7f1',
-    color: '#116149',
-    border: '1px solid #9dd9c3',
-  },
-  alertError: {
-    background: '#fff1f1',
-    color: '#a13131',
-    border: '1px solid #f1bbbb',
-  },
-  filterSection: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: '1rem',
-    marginBottom: '1.5rem',
-    padding: '1rem',
-    background: '#f0f7f8',
-    borderRadius: '12px',
-  },
-  filterGroup: {
-    display: 'grid',
-    gap: '0.5rem',
-  },
-  label: {
-    display: 'block',
-    fontWeight: 600,
-    color: '#116a7b',
-    fontSize: '14px',
-  },
-  input: {
-    width: '100%',
-    padding: '0.7rem 0.8rem',
-    borderRadius: '8px',
-    border: '1px solid #cfe1e5',
-    background: '#fff',
-    fontSize: '14px',
-  },
-  statsText: {
-    color: '#5f7480',
-    fontSize: '14px',
-  },
-  list: {
-    listStyle: 'none',
-    display: 'grid',
-    gap: '0.85rem',
-    padding: 0,
-    margin: 0,
-  },
-  listItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '1rem',
-    padding: '1rem',
-    borderRadius: '14px',
-    border: '1px solid #e3eaec',
-    background: '#ffffff',
-    flexWrap: 'wrap',
-  },
-  listDetails: {
-    display: 'grid',
-    gap: '0.5rem',
-    flex: 1,
-    minWidth: '300px',
-  },
-  listHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    flexWrap: 'wrap',
-  },
-  badge: {
-    padding: '2px 10px',
-    borderRadius: '999px',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  meta: {
-    color: '#5f7480',
-    fontSize: '0.95rem',
-  },
-  actions: {
-    display: 'flex',
-    gap: '0.5rem',
-    flexWrap: 'wrap',
-  },
-  emptyState: {
-    color: '#5f7480',
-    padding: '0.75rem 0',
-  },
-};
 
 export default ListaEspera;
 

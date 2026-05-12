@@ -1,163 +1,82 @@
-import { useEffect, useState } from 'react';
-import {
-  enviarNotificacion as enviarNotificacionApi,
-  obtenerNotificacionesPendientes,
-} from '../api/notificacionesApi';
+import { useNotificacionesFacade } from '../facade/appFacade';
+import { commonStyles } from '../styles/commonStyles';
 
+/**
+ * Componente de Notificaciones
+ * Gestiona el envío de notificaciones usando el Facade
+ */
 function Notificaciones() {
-  const [notificaciones, setNotificaciones] = useState([]);
-  const [cargando, setCargando] = useState(false);
-  const [mensaje, setMensaje] = useState('');
-  const [error, setError] = useState('');
-
-  const cargarNotificaciones = async () => {
-    setCargando(true);
-    setMensaje('');
-    setError('');
-
-    try {
-      const data = await obtenerNotificacionesPendientes();
-      setNotificaciones(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(err.message || 'No fue posible cargar las notificaciones');
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      void cargarNotificaciones();
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, []);
-
-  const manejarEnviarNotificacion = async (id) => {
-    setCargando(true);
-    setMensaje('');
-    setError('');
-
-    try {
-      await enviarNotificacionApi(id);
-      setNotificaciones((actuales) => actuales.filter((n) => n.id !== id));
-      setMensaje(`Notificación ${id} enviada correctamente.`);
-    } catch (err) {
-      setError(err.message || 'No fue posible enviar la notificación');
-    } finally {
-      setCargando(false);
-    }
-  };
+  const {
+    notificaciones,
+    cargando,
+    mensaje,
+    error,
+    enviarNotificacion,
+    enviarTodas,
+  } = useNotificacionesFacade();
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.title}>Notificaciones Pendientes</h2>
+    <div style={commonStyles.container}>
+      <header style={commonStyles.header}>
+        <h2 style={commonStyles.title}>Notificaciones Pendientes</h2>
+        <p style={commonStyles.subtitle}>
+          Gestiona y envía notificaciones a pacientes registrados en el sistema.
+        </p>
+      </header>
 
-      <div style={styles.feedback}>
-        {mensaje ? <div style={{ ...styles.alert, ...styles.alertSuccess }}>{mensaje}</div> : null}
-        {error ? <div style={{ ...styles.alert, ...styles.alertError }}>{error}</div> : null}
-      </div>
+      <section style={commonStyles.panel} aria-live="polite">
+        <div style={commonStyles.toolbar}>
+          <h3 style={commonStyles.sectionTitle}>Panel de Notificaciones</h3>
+          {notificaciones.length > 0 && (
+            <button
+              type="button"
+              style={{ ...commonStyles.button, ...commonStyles.buttonPrimary }}
+              onClick={enviarTodas}
+              disabled={cargando}
+            >
+              {cargando ? 'Enviando…' : `Enviar todas (${notificaciones.length})`}
+            </button>
+          )}
+        </div>
 
-      {cargando ? (
-        <p style={styles.noData}>Cargando notificaciones…</p>
-      ) : notificaciones.length === 0 ? (
-        <p style={styles.noData}>No hay notificaciones pendientes</p>
-      ) : (
-        <ul style={styles.list}>
-          {notificaciones.map(n => (
-            <li key={n.id} style={styles.listItem}>
-              <div style={styles.details}>
-                <strong>ID: {n.id}</strong>
-                <span style={styles.meta}>Paciente: {n.pacienteId ?? 'N/A'}</span>
-                <span style={styles.meta}>Tipo: {n.tipo ?? 'N/A'}</span>
-                <span style={styles.meta}>Estado: {n.estado ?? 'N/A'}</span>
-                <span style={styles.meta}>Mensaje: {n.mensaje}</span>
-              </div>
-              <button
-                style={styles.button}
-                onClick={() => manejarEnviarNotificacion(n.id)}
-                disabled={cargando}
-              >
-                Enviar
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+        <div style={commonStyles.feedback}>
+          {mensaje ? <div style={{ ...commonStyles.alert, ...commonStyles.alertSuccess }}>{mensaje}</div> : null}
+          {error ? <div style={{ ...commonStyles.alert, ...commonStyles.alertError }}>{error}</div> : null}
+        </div>
+
+        {cargando && notificaciones.length === 0 ? (
+          <p style={commonStyles.emptyState}>Cargando notificaciones…</p>
+        ) : notificaciones.length === 0 ? (
+          <p style={commonStyles.emptyState}>No hay notificaciones pendientes en este momento.</p>
+        ) : (
+          <ul style={commonStyles.list}>
+            {notificaciones.map((notificacion) => (
+              <li key={notificacion.id} style={commonStyles.listItem}>
+                <div style={commonStyles.listDetails}>
+                  <strong>ID: {notificacion.id}</strong>
+                  <span style={commonStyles.meta}>Paciente ID: {notificacion.pacienteId ?? 'N/A'}</span>
+                  <span style={commonStyles.meta}>Tipo: {notificacion.tipo ?? 'N/A'}</span>
+                  <span style={commonStyles.meta}>Estado: {notificacion.estado ?? 'PENDIENTE'}</span>
+                  <span style={commonStyles.meta}>
+                    Mensaje: {notificacion.mensaje || 'Sin mensaje'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  style={{ ...commonStyles.button, ...commonStyles.buttonPrimary }}
+                  onClick={() => enviarNotificacion(notificacion.id)}
+                  disabled={cargando}
+                >
+                  {cargando ? 'Enviando…' : 'Enviar'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
 
-const styles = {
-  container: {
-    padding: '20px 0'
-  },
-  title: {
-    fontSize: '28px',
-    color: '#0d4f5c',
-    marginBottom: '20px',
-    borderBottom: '2px solid #4db6ac',
-    paddingBottom: '10px'
-  },
-  list: {
-    display: 'grid',
-    gap: '0.85rem',
-    listStyle: 'none',
-    padding: 0
-  },
-  listItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px',
-    marginBottom: '8px',
-    backgroundColor: '#ffffff',
-    border: '1px solid #e3eaec',
-    borderRadius: '14px'
-  },
-  details: {
-    display: 'grid',
-    gap: '0.25rem'
-  },
-  meta: {
-    color: '#567',
-    fontSize: '0.95rem'
-  },
-  button: {
-    padding: '8px 16px',
-    backgroundColor: '#116a7b',
-    color: 'white',
-    border: 'none',
-    borderRadius: '999px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  feedback: {
-    display: 'grid',
-    gap: '0.75rem',
-    marginBottom: '1rem'
-  },
-  alert: {
-    padding: '0.9rem 1rem',
-    borderRadius: '10px',
-    fontWeight: 600
-  },
-  alertSuccess: {
-    backgroundColor: '#e6f7f1',
-    color: '#116149',
-    border: '1px solid #9dd9c3'
-  },
-  alertError: {
-    backgroundColor: '#fff1f1',
-    color: '#a13131',
-    border: '1px solid #f1bbbb'
-  },
-  noData: {
-    color: '#5f7480',
-    fontSize: '16px',
-    fontStyle: 'italic',
-    padding: '20px'
-  }
-};
 
 export default Notificaciones;
